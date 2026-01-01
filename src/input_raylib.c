@@ -1,5 +1,5 @@
 #include "input_raylib.h"
-#include "input/input_provider.h"
+#include "gramarye_renderer/input_provider.h"
 #include "raylib.h"
 #include <stdlib.h>
 #include <string.h>

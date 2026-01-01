@@ -1,5 +1,5 @@
 #include "renderer_raylib.h"
-#include "renderer/renderer.h"
+#include "gramarye_renderer/renderer.h"
 #include "raylib.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -262,6 +262,114 @@ static RenderVector2 raylib_get_window_size(Renderer* r) {
     return (RenderVector2){(float)width, (float)height};
 }
 
+static int raylib_get_render_width(Renderer* r) {
+    (void)r;
+    return GetRenderWidth();
+}
+
+static int raylib_get_render_height(Renderer* r) {
+    (void)r;
+    return GetRenderHeight();
+}
+
+static int raylib_get_screen_width(Renderer* r) {
+    (void)r;
+    return GetScreenWidth();
+}
+
+static int raylib_get_screen_height(Renderer* r) {
+    (void)r;
+    return GetScreenHeight();
+}
+
+// Camera transformation functions
+// These cast the opaque handles to the actual game types (Camera2DEx, AspectFit)
+static RenderVector2 raylib_world_to_screen(Renderer* r, CameraHandle camera, AspectFitHandle aspectFit, RenderVector2 world) {
+    (void)r;
+    // Cast opaque handles to actual types (these are game-specific, but we know the implementation)
+    typedef struct {
+        Vector2 pos;
+        float zoom;
+        float minZoom;
+        float maxZoom;
+        float speed;
+        Vector2 logicalSize;
+    } Camera2DEx;
+    
+    typedef struct {
+        Rectangle dest;
+        float scale;
+    } AspectFit;
+    
+    Camera2DEx* cam = (Camera2DEx*)camera;
+    AspectFit* fit = (AspectFit*)aspectFit;
+    
+    if (!cam || !fit) {
+        return (RenderVector2){0.0f, 0.0f};
+    }
+    
+    Vector2 logical = { (world.x - cam->pos.x) * cam->zoom, (world.y - cam->pos.y) * cam->zoom };
+    Vector2 result = { fit->dest.x + logical.x * fit->scale, fit->dest.y + logical.y * fit->scale };
+    return (RenderVector2){result.x, result.y};
+}
+
+static RenderVector2 raylib_screen_to_world(Renderer* r, CameraHandle camera, AspectFitHandle aspectFit, RenderVector2 screen) {
+    (void)r;
+    // Cast opaque handles to actual types
+    typedef struct {
+        Vector2 pos;
+        float zoom;
+        float minZoom;
+        float maxZoom;
+        float speed;
+        Vector2 logicalSize;
+    } Camera2DEx;
+    
+    typedef struct {
+        Rectangle dest;
+        float scale;
+    } AspectFit;
+    
+    Camera2DEx* cam = (Camera2DEx*)camera;
+    AspectFit* fit = (AspectFit*)aspectFit;
+    
+    if (!cam || !fit) {
+        return (RenderVector2){0.0f, 0.0f};
+    }
+    
+    Vector2 logical = { (screen.x - fit->dest.x) / fit->scale, (screen.y - fit->dest.y) / fit->scale };
+    Vector2 result = { logical.x / cam->zoom + cam->pos.x, logical.y / cam->zoom + cam->pos.y };
+    return (RenderVector2){result.x, result.y};
+}
+
+static float raylib_get_camera_zoom(Renderer* r, CameraHandle camera) {
+    (void)r;
+    typedef struct {
+        Vector2 pos;
+        float zoom;
+        float minZoom;
+        float maxZoom;
+        float speed;
+        Vector2 logicalSize;
+    } Camera2DEx;
+    
+    Camera2DEx* cam = (Camera2DEx*)camera;
+    if (!cam) return 1.0f;
+    return cam->zoom;
+}
+
+static float raylib_get_aspect_fit_scale(Renderer* r, AspectFitHandle aspectFit) {
+    (void)r;
+    typedef struct {
+        Rectangle dest;
+        float scale;
+    } AspectFit;
+    
+    AspectFit* fit = (AspectFit*)aspectFit;
+    if (!fit) return 1.0f;
+    return fit->scale;
+}
+
 static const RendererVTable raylib_vtable = {
     .init = raylib_init,
     .close = raylib_close,
@@ -277,6 +385,14 @@ static const RendererVTable raylib_vtable = {
     .get_delta_time = raylib_get_delta_time,
     .get_mouse_position = raylib_get_mouse_position,
     .get_window_size = raylib_get_window_size,
+    .get_render_width = raylib_get_render_width,
+    .get_render_height = raylib_get_render_height,
+    .get_screen_width = raylib_get_screen_width,
+    .get_screen_height = raylib_get_screen_height,
+    .world_to_screen = raylib_world_to_screen,
+    .screen_to_world = raylib_screen_to_world,
+    .get_camera_zoom = raylib_get_camera_zoom,
+    .get_aspect_fit_scale = raylib_get_aspect_fit_scale,
 };
 
 Renderer* RendererRaylib_create(void) {
