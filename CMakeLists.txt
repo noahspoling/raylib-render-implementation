@@ -14,17 +14,24 @@ endif()
 # Option to build as shared or static (default static)
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
-# Fetch gramarye-libcore (for Arena, etc.)
+# Fetch gramarye-libcore (or use local if USE_LOCAL_MODULES is set)
 include(FetchContent)
-FetchContent_Declare(
-    gramarye_libcore
-    GIT_REPOSITORY "https://github.com/noahspoling/gramarye-libcore.git"
-    GIT_TAG "main"
-    GIT_PROGRESS TRUE
-    GIT_SHALLOW TRUE
-)
-
-FetchContent_MakeAvailable(gramarye_libcore)
+# Check if target already exists (from parent using local modules)
+if(NOT TARGET gramarye-libcore)
+    if(USE_LOCAL_MODULES AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../gramarye-libcore/CMakeLists.txt")
+        message(STATUS "raylib-render-implementation: Using local gramarye-libcore")
+        add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../gramarye-libcore gramarye-libcore)
+    else()
+        FetchContent_Declare(
+            gramarye_libcore
+            GIT_REPOSITORY "https://github.com/noahspoling/gramarye-libcore.git"
+            GIT_TAG "main"
+            GIT_PROGRESS TRUE
+            GIT_SHALLOW TRUE
+        )
+        FetchContent_MakeAvailable(gramarye_libcore)
+    endif()
+endif()
 
 # Raylib is expected to be provided by the parent project
 # We'll link against it if available, but don't fetch it here
