@@ -370,6 +370,49 @@ static float raylib_get_aspect_fit_scale(Renderer* r, AspectFitHandle aspectFit)
     return fit->scale;
 }
 
+// Render texture functions
+static RenderTexture* raylib_create_render_texture(Renderer* r, int width, int height) {
+    (void)r;
+    RenderTexture2D* rt = (RenderTexture2D*)malloc(sizeof(RenderTexture2D));
+    if (rt) {
+        *rt = LoadRenderTexture(width, height);
+        SetTextureFilter(rt->texture, TEXTURE_FILTER_POINT);
+    }
+    return (RenderTexture*)rt;
+}
+
+static void raylib_destroy_render_texture(Renderer* r, RenderTexture* renderTexture) {
+    (void)r;
+    if (renderTexture) {
+        RenderTexture2D* rt = (RenderTexture2D*)renderTexture;
+        UnloadRenderTexture(*rt);
+        free(rt);
+    }
+}
+
+static void raylib_begin_render_texture(Renderer* r, RenderTexture* renderTexture) {
+    (void)r;
+    if (renderTexture) {
+        RenderTexture2D* rt = (RenderTexture2D*)renderTexture;
+        BeginTextureMode(*rt);
+    }
+}
+
+static void raylib_end_render_texture(Renderer* r) {
+    (void)r;
+    EndTextureMode();
+}
+
+static void* raylib_get_render_texture_texture(Renderer* r, RenderTexture* renderTexture) {
+    (void)r;
+    if (renderTexture) {
+        RenderTexture2D* rt = (RenderTexture2D*)renderTexture;
+        // Return pointer to the texture (for use with DrawTexturePro, etc.)
+        return &rt->texture;
+    }
+    return NULL;
+}
+
 static const RendererVTable raylib_vtable = {
     .init = raylib_init,
     .close = raylib_close,
@@ -393,6 +436,11 @@ static const RendererVTable raylib_vtable = {
     .screen_to_world = raylib_screen_to_world,
     .get_camera_zoom = raylib_get_camera_zoom,
     .get_aspect_fit_scale = raylib_get_aspect_fit_scale,
+    .create_render_texture = raylib_create_render_texture,
+    .destroy_render_texture = raylib_destroy_render_texture,
+    .begin_render_texture = raylib_begin_render_texture,
+    .end_render_texture = raylib_end_render_texture,
+    .get_render_texture_texture = raylib_get_render_texture_texture,
 };
 
 Renderer* RendererRaylib_create(void) {
