@@ -12,8 +12,9 @@ typedef struct {
 } RaylibRendererData;
 
 static void raylib_init(Renderer* r, int width, int height, const char* title, uint32_t flags) {
+    SetConfigFlags(flags);
     InitWindow(width, height, title);
-    SetWindowState(flags);
+    //SetWindowState(flags);
     SetTargetFPS(60);
     
     RaylibRendererData* data = (RaylibRendererData*)r->backendData;
